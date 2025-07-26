@@ -34,7 +34,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	}
 
 	user := models.User{
-		Name:         req.Name,
+		Username:     req.Username,
 		Email:        req.Email,
 		CreatedAt:    time.Now(),
 		PasswordHash: string(hash),
@@ -67,7 +67,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "could not generate access token"})
 	}
 
-	refresh, _ := h.createToken(user.ID, h.Secret, 7*24*time.Minute)
+	refresh, _ := h.createToken(user.ID, h.RefreshSecret, 7*24*time.Minute)
 
 	h.DB.Model(&user).Update("refresh_token", refresh)
 
@@ -78,27 +78,38 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		Expires:  time.Now().Add(15 * time.Minute),
 	})
 
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    refresh,
-		HTTPOnly: true,
-		Expires:  time.Now().Add(7 * 24 * time.Hour),
-	})
-
 	return c.JSON(fiber.Map{"success": 1})
 }
 
 func (h *AuthHandler) Refresh(c *fiber.Ctx) error {
-	tok := c.FormValue("refresh_token")
-	claims, err := h.parseToken(tok, h.RefreshSecret)
+	tok := c.Cookies("access_token", "")
+
+	if tok == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "no access token provided"})
+	}
+
+	claims, err := h.parseToken(tok, h.Secret)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	userID := uint(claims["sub"].(float64))
 	var user models.User
-	if err := h.DB.First(&user, userID).Error; err != nil || user.RefreshToken != &tok {
+
+	println("2")
+	if err := h.DB.First(&user, userID).Error; err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	println("1")
+	if user.RefreshToken == nil || *user.RefreshToken == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "no refresh token found"})
+	}
+
+	println("3")
+	_, err = h.parseToken(*user.RefreshToken, h.RefreshSecret)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid refresh token, " + err.Error()})
 	}
 
 	newAccess, _ := h.createToken(userID, h.Secret, 15*time.Minute)
@@ -113,16 +124,15 @@ func (h *AuthHandler) Refresh(c *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
-	tok := c.FormValue("refresh_token")
-	claims, err := h.parseToken(tok, h.RefreshSecret)
+	tok := c.Cookies("access_token", "")
+	claims, err := h.parseToken(tok, h.Secret)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "token is invalid"})
 	}
 
 	userID := uint(claims["sub"].(float64))
 	h.DB.Model(&models.User{}).Where("id = ?", userID).Update("refresh_token", "")
 	c.Cookie(&fiber.Cookie{Name: "access_token", Value: "", HTTPOnly: true, Expires: time.Now().Add(-1 * time.Hour)})
-	c.Cookie(&fiber.Cookie{Name: "refresh_token", Value: "", HTTPOnly: true, Expires: time.Now().Add(-1 * time.Hour)})
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -147,7 +157,11 @@ func (h *AuthHandler) parseToken(tokenStr, secret string) (jwt.MapClaims, error)
 		}
 		return []byte(secret), nil
 	})
-	if err != nil || !tok.Valid {
+	if err != nil {
+		return nil, err
+	}
+
+	if !tok.Valid {
 		return nil, errors.New("invalid token")
 	}
 	return tok.Claims.(jwt.MapClaims), nil

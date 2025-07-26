@@ -25,6 +25,7 @@ func main() {
 	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{})
 
 	ah := handlers.NewAuthHandler(db, secret, refreshSecret)
+	uh := handlers.NewUserHandler(db)
 
 	app := fiber.New()
 
@@ -35,8 +36,12 @@ func main() {
 	authGroup.Post("/refresh", ah.Refresh)
 	authGroup.Post("/logout", ah.Logout)
 
+	// User group
+	userGroup := app.Group("/user")
+	userGroup.Get("/get", uh.GetUser)
+
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello")
+		return c.SendString("OK")
 	})
 
 	app.Listen(":3000")
