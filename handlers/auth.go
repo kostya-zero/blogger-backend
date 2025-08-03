@@ -1,8 +1,10 @@
+// Package handlers contains handlers for Blogger backend
 package handlers
 
 import (
 	"blogger/dto"
 	"blogger/models"
+	"blogger/validation"
 	"errors"
 	"time"
 
@@ -28,6 +30,10 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
 	}
 
+	if err := validation.ValidateStruct(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": (*err)[0]})
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not hash password"})
@@ -38,6 +44,14 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		Email:        req.Email,
 		CreatedAt:    time.Now(),
 		PasswordHash: string(hash),
+	}
+
+	if err := h.DB.Where("email = ?", user.Email).First(&models.User{}).Error; err == nil {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "user with this email already exists"})
+	}
+
+	if err := h.DB.Where("username = ?", user.Username).First(&models.User{}).Error; err == nil {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "user with this username email already exists"})
 	}
 
 	if err := h.DB.Create(&user).Error; err != nil {
@@ -51,6 +65,10 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req dto.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
+	}
+
+	if err := validation.ValidateStruct(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": (*err)[0]})
 	}
 
 	var user models.User
@@ -96,17 +114,14 @@ func (h *AuthHandler) Refresh(c *fiber.Ctx) error {
 	userID := uint(claims["sub"].(float64))
 	var user models.User
 
-	println("2")
 	if err := h.DB.First(&user, userID).Error; err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	println("1")
 	if user.RefreshToken == nil || *user.RefreshToken == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "no refresh token found"})
 	}
 
-	println("3")
 	_, err = h.parseToken(*user.RefreshToken, h.RefreshSecret)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid refresh token, " + err.Error()})
@@ -151,7 +166,7 @@ func (h *AuthHandler) createToken(userID uint, secret string, ttl time.Duration)
 }
 
 func (h *AuthHandler) parseToken(tokenStr, secret string) (jwt.MapClaims, error) {
-	tok, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+	tok, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
