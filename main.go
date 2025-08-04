@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -28,8 +29,10 @@ func main() {
 	uh := handlers.NewUserHandler(db)
 
 	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
+		DisableStartupMessage: false,
 	})
+
+	app.Use(logger.New())
 
 	// Auth group
 	authGroup := app.Group("/auth")
@@ -39,8 +42,9 @@ func main() {
 	authGroup.Post("/logout", ah.Logout)
 
 	// User group
-	userGroup := app.Group("/user")
-	userGroup.Get("/get", uh.GetUser)
+	usersGroup := app.Group("/users")
+	usersGroup.Get("/get", uh.GetUser)
+	usersGroup.Get("/getLikes", uh.GetUsersLikes)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
