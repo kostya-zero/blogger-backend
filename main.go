@@ -27,7 +27,9 @@ func main() {
 	ah := handlers.NewAuthHandler(db, secret, refreshSecret)
 	uh := handlers.NewUserHandler(db)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		DisableStartupMessage: true,
+	})
 
 	// Auth group
 	authGroup := app.Group("/auth")
