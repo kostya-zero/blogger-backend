@@ -45,6 +45,7 @@ func main() {
 	usersGroup := app.Group("/users")
 	usersGroup.Get("/get", uh.GetUser)
 	usersGroup.Get("/getLikes", uh.GetUsersLikes)
+	usersGroup.Get("/getPosts", uh.GetUsersPosts)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
