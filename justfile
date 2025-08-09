@@ -1,7 +1,7 @@
 set shell := ["bash", "-c"]
 set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
 
-binaryPath := if os() == "windows" { '../build/blogger.exe' } else { '../build/blogger' }
+binaryPath := if os() == "windows" { './build/blogger.exe' } else { './build/blogger' }
 
 # Runs build recipe
 default: build
