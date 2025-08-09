@@ -12,7 +12,7 @@ update:
 
 # Build the project to an executable
 build:
-    cd ./app && go build -o {{ binaryPath }} .
+    go build -o {{ binaryPath }} .
 
 # Remove the build artifacts
 clean:
@@ -20,4 +20,4 @@ clean:
 
 # Run the application with optional arguments
 run *ARGS:
-    cd ./app && go run . {{ ARGS }}
+    go run . {{ ARGS }}
