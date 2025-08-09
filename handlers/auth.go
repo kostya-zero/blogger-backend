@@ -6,6 +6,7 @@ import (
 	"blogger/models"
 	"blogger/validation"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,6 +14,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+type TokenClaims struct {
+	UserID uint   `json:"sub"`
+	Issuer string `json:"iss"`
+	jwt.RegisteredClaims
+}
 
 type AuthHandler struct {
 	DB            *gorm.DB
@@ -111,7 +118,7 @@ func (h *AuthHandler) Refresh(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	userID := uint(claims["sub"].(float64))
+	userID := claims.UserID
 	var user models.User
 
 	if err := h.DB.First(&user, userID).Error; err != nil {
@@ -145,39 +152,59 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "token is invalid"})
 	}
 
-	userID := uint(claims["sub"].(float64))
+	userID := claims.UserID
 	h.DB.Model(&models.User{}).Where("id = ?", userID).Update("refresh_token", "")
 	c.Cookie(&fiber.Cookie{Name: "access_token", Value: "", HTTPOnly: true, Expires: time.Now().Add(-1 * time.Hour)})
 	return c.SendStatus(fiber.StatusOK)
 }
 
 func (h *AuthHandler) createToken(userID uint, secret string, ttl time.Duration) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": userID,
-		"iss": "blogger",
-		"exp": time.Now().Add(ttl).Unix(),
-	})
+	now := time.Now()
+	claims := TokenClaims{
+		UserID: userID,
+		Issuer: "blogger",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			ID:        fmt.Sprintf("%d", time.Now().UnixNano()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
-		return "", err
+		return "", errors.New("could not sign token: " + err.Error())
 	}
 
 	return tokenString, nil
 }
 
-func (h *AuthHandler) parseToken(tokenStr, secret string) (jwt.MapClaims, error) {
-	tok, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+func (h *AuthHandler) parseToken(tokenStr, secret string) (*TokenClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
 		return []byte(secret), nil
 	})
 	if err != nil {
-		return nil, err
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, errors.New("token expired")
+		}
+		if errors.Is(err, jwt.ErrTokenMalformed) {
+			return nil, errors.New("token malformed")
+		}
+		return nil, fmt.Errorf("could not parse token: %w", err)
 	}
 
-	if !tok.Valid {
+	if !token.Valid {
 		return nil, errors.New("invalid token")
 	}
-	return tok.Claims.(jwt.MapClaims), nil
+
+	claims, ok := token.Claims.(*TokenClaims)
+	if !ok {
+		return nil, errors.New("could not parse claims")
+	}
+
+	return claims, nil
 }
