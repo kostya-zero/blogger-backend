@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -56,4 +57,22 @@ func (ph *PostsHandler) CreatePost(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"success": 1})
+}
+
+func (ph *PostsHandler) GetPost(c *fiber.Ctx) error {
+	postID := c.Query("id", "")
+
+	if postID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "The 'id' parameter is required"})
+	}
+
+	var post models.Post
+	if err := ph.DB.Preload("User").Where("id = ?", postID).First(&post).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found."})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not retrieve user data"})
+	}
+
+	return c.JSON(post)
 }

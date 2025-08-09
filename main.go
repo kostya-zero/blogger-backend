@@ -56,8 +56,8 @@ func main() {
 	usersGroup.Get("/getPosts", uh.GetUsersPosts)
 
 	postsGroup := app.Group("/posts")
-	postsGroup.Use(jwt.JwtMiddleware(secret))
-	postsGroup.Post("/create", ph.CreatePost)
+	postsGroup.Post("/create", jwt.JwtMiddleware(secret), ph.CreatePost)
+	postsGroup.Get("/get", ph.GetPost)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
