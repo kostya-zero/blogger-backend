@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/kostya-zero/blogger/handlers"
 	"github.com/kostya-zero/blogger/models"
 
@@ -14,9 +15,14 @@ import (
 )
 
 func main() {
-	secret := "supersecret"
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
 
-	dsn := "host=localhost user=blogger password=blogger dbname=blogger port=5432 sslmode=disable TimeZone=UTC"
+	secret := os.Getenv("BLOGGER_JWT_SECRET")
+	dsn := os.Getenv("BLOGGER_GORM_DATABASE_STRING")
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		fmt.Printf("Failed to open connection to database: %s", err.Error())
@@ -41,7 +47,7 @@ func main() {
 	authGroup.Post("/refresh", ah.Refresh)
 	authGroup.Post("/logout", ah.Logout)
 
-	// User group
+	// Users group
 	usersGroup := app.Group("/users")
 	usersGroup.Get("/get", uh.GetUser)
 	usersGroup.Get("/getLikes", uh.GetUsersLikes)
