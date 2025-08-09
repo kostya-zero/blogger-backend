@@ -15,7 +15,6 @@ import (
 
 func main() {
 	secret := "supersecret"
-	refreshSecret := "refreshsecret"
 
 	dsn := "host=localhost user=blogger password=blogger dbname=blogger port=5432 sslmode=disable TimeZone=UTC"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -26,7 +25,7 @@ func main() {
 
 	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{})
 
-	ah := handlers.NewAuthHandler(db, secret, refreshSecret)
+	ah := handlers.NewAuthHandler(db, secret)
 	uh := handlers.NewUserHandler(db)
 
 	app := fiber.New(fiber.Config{

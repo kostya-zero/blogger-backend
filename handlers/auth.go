@@ -23,13 +23,12 @@ type TokenClaims struct {
 }
 
 type AuthHandler struct {
-	DB            *gorm.DB
-	Secret        string
-	RefreshSecret string
+	DB     *gorm.DB
+	Secret string
 }
 
-func NewAuthHandler(db *gorm.DB, secret, refreshSecret string) *AuthHandler {
-	return &AuthHandler{DB: db, Secret: secret, RefreshSecret: refreshSecret}
+func NewAuthHandler(db *gorm.DB, secret string) *AuthHandler {
+	return &AuthHandler{DB: db, Secret: secret}
 }
 
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
@@ -93,7 +92,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "could not generate access token"})
 	}
 
-	refresh, _ := h.createToken(user.ID, h.RefreshSecret, 7*24*time.Minute)
+	refresh, _ := h.createToken(user.ID, h.Secret, 7*24*time.Minute)
 
 	h.DB.Model(&user).Update("refresh_token", refresh)
 
@@ -130,7 +129,7 @@ func (h *AuthHandler) Refresh(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "no refresh token found"})
 	}
 
-	_, err = h.parseToken(*user.RefreshToken, h.RefreshSecret)
+	_, err = h.parseToken(*user.RefreshToken, h.Secret)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid refresh token, " + err.Error()})
 	}
