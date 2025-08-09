@@ -6,6 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kostya-zero/blogger/handlers"
+	"github.com/kostya-zero/blogger/jwt"
 	"github.com/kostya-zero/blogger/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -33,6 +34,7 @@ func main() {
 
 	ah := handlers.NewAuthHandler(db, secret)
 	uh := handlers.NewUserHandler(db)
+	ph := handlers.NewPostsHandler(db)
 
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: false,
@@ -52,6 +54,10 @@ func main() {
 	usersGroup.Get("/get", uh.GetUser)
 	usersGroup.Get("/getLikes", uh.GetUsersLikes)
 	usersGroup.Get("/getPosts", uh.GetUsersPosts)
+
+	postsGroup := app.Group("/posts")
+	postsGroup.Use(jwt.JwtMiddleware(secret))
+	postsGroup.Post("/create", ph.CreatePost)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
