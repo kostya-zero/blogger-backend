@@ -2,12 +2,13 @@
 package handlers
 
 import (
-	"blogger/dto"
-	"blogger/models"
-	"blogger/validation"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/kostya-zero/blogger/dto"
+	"github.com/kostya-zero/blogger/models"
+	"github.com/kostya-zero/blogger/validation"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"

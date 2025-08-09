@@ -1,10 +1,11 @@
 package main
 
 import (
-	"blogger/handlers"
-	"blogger/models"
 	"fmt"
 	"os"
+
+	"github.com/kostya-zero/blogger/handlers"
+	"github.com/kostya-zero/blogger/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"

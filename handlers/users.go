@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"blogger/models"
 	"errors"
+
+	"github.com/kostya-zero/blogger/models"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
