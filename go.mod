@@ -1,6 +1,6 @@
 module github.com/kostya-zero/blogger
 
-go 1.24.5
+go 1.25.0
 
 require (
 	github.com/go-playground/locales v0.14.1
