@@ -4,10 +4,10 @@ package handlers
 import (
 	"time"
 
-	"github.com/kostya-zero/blogger/dto"
-	"github.com/kostya-zero/blogger/jwt"
-	"github.com/kostya-zero/blogger/models"
-	"github.com/kostya-zero/blogger/validation"
+	"github.com/kostya-zero/blogger/internal/dto"
+	"github.com/kostya-zero/blogger/internal/jwt"
+	"github.com/kostya-zero/blogger/internal/models"
+	"github.com/kostya-zero/blogger/internal/validation"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"

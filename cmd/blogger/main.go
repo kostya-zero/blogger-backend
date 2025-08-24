@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/kostya-zero/blogger/handlers"
-	"github.com/kostya-zero/blogger/jwt"
-	"github.com/kostya-zero/blogger/models"
+	"github.com/kostya-zero/blogger/internal/handlers"
+	"github.com/kostya-zero/blogger/internal/jwt"
+	"github.com/kostya-zero/blogger/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
