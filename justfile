@@ -12,7 +12,7 @@ update:
 
 # Build the project to an executable
 build:
-    go build -o {{ binaryPath }} .
+    go build -o {{ binaryPath }} cmd/blogger/main.go
 
 # Remove the build artifacts
 clean:
@@ -20,4 +20,4 @@ clean:
 
 # Run the application with optional arguments
 run *ARGS:
-    go run . {{ ARGS }}
+    go run cmd/blogger/main.go {{ ARGS }}
