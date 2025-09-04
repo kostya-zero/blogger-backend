@@ -26,7 +26,7 @@ func NewAuthHandler(db *gorm.DB, secret string) *AuthHandler {
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	var req dto.RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid payload"})
 	}
 
 	if err := validation.ValidateStruct(req); err != nil {
@@ -35,7 +35,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not hash password"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not hash password"})
 	}
 
 	user := models.User{
@@ -46,15 +46,15 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	}
 
 	if err := h.DB.Where("email = ?", user.Email).First(&models.User{}).Error; err == nil {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "user with this email already exists"})
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "User with this email already exists"})
 	}
 
 	if err := h.DB.Where("username = ?", user.Username).First(&models.User{}).Error; err == nil {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "user with this username email already exists"})
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "User with this username email already exists"})
 	}
 
 	if err := h.DB.Create(&user).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not create user in database"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create user in database"})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"success": 1})
@@ -63,7 +63,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req dto.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid payload"})
 	}
 
 	if err := validation.ValidateStruct(req); err != nil {
@@ -72,16 +72,16 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 
 	var user models.User
 	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user not found"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)) != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "wrong password"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Wrong password"})
 	}
 
 	access, err := jwt.CreateToken(user.ID, h.Secret, 15*time.Minute)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "could not generate access token"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Could not generate access token"})
 	}
 
 	refresh, _ := jwt.CreateToken(user.ID, h.Secret, 7*24*time.Minute)
@@ -102,7 +102,7 @@ func (h *AuthHandler) Refresh(c *fiber.Ctx) error {
 	tok := c.Cookies("access_token", "")
 
 	if tok == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "no access token provided"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "No access token provided"})
 	}
 
 	claims, err := jwt.ParseToken(tok, h.Secret)
@@ -118,12 +118,12 @@ func (h *AuthHandler) Refresh(c *fiber.Ctx) error {
 	}
 
 	if user.RefreshToken == nil || *user.RefreshToken == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "no refresh token found"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "No refresh token found"})
 	}
 
 	_, err = jwt.ParseToken(*user.RefreshToken, h.Secret)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid refresh token, " + err.Error()})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid refresh token, " + err.Error()})
 	}
 
 	newAccess, _ := jwt.CreateToken(userID, h.Secret, 15*time.Minute)
@@ -141,7 +141,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	tok := c.Cookies("access_token", "")
 	claims, err := jwt.ParseToken(tok, h.Secret)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "token is invalid"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Token is invalid"})
 	}
 
 	userID := claims.UserID
