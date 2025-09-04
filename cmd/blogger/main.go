@@ -16,6 +16,8 @@ import (
 )
 
 func main() {
+	println("Starting Blogger Backend...")
+	println("Loading dotenv...")
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file")
@@ -24,14 +26,18 @@ func main() {
 	secret := os.Getenv("BLOGGER_JWT_SECRET")
 	dsn := os.Getenv("BLOGGER_GORM_DATABASE_STRING")
 
+	println("Connecting to database...")
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		fmt.Printf("Failed to open connection to database: %s", err.Error())
 		os.Exit(1)
 	}
+	println("Successfully connected to database.")
 
+	println("Running migrations...")
 	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{})
 
+	println("Setting up Fiber...")
 	ah := handlers.NewAuthHandler(db, secret)
 	uh := handlers.NewUserHandler(db)
 	ph := handlers.NewPostsHandler(db)
@@ -63,5 +69,6 @@ func main() {
 		return c.SendString("OK")
 	})
 
+	println("Running Fiber App...")
 	app.Listen(":3000")
 }
