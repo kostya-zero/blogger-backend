@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/kostya-zero/blogger/handlers"
 	"github.com/kostya-zero/blogger/jwt"
 	"github.com/kostya-zero/blogger/models"
+	"github.com/kostya-zero/blogger/routes"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -38,9 +38,9 @@ func main() {
 	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{})
 
 	println("Setting up Fiber...")
-	ah := handlers.NewAuthHandler(db, secret)
-	uh := handlers.NewUserHandler(db)
-	ph := handlers.NewPostsHandler(db)
+	ah := routes.NewAuthHandler(db, secret)
+	uh := routes.NewUserHandler(db)
+	ph := routes.NewPostsHandler(db)
 
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: false,

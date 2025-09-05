@@ -1,5 +1,5 @@
-// Package handlers contains handlers for Blogger backend
-package handlers
+// Package routes contains handlers for Blogger backend
+package routes
 
 import (
 	"time"
