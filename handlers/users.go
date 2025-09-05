@@ -3,7 +3,7 @@ package handlers
 import (
 	"errors"
 
-	"github.com/kostya-zero/blogger/internal/models"
+	"github.com/kostya-zero/blogger/models"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
