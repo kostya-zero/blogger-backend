@@ -58,12 +58,13 @@ func main() {
 	// Users group
 	usersGroup := app.Group("/users")
 	usersGroup.Get("/get", uh.GetUser)
-	usersGroup.Get("/getLikes", uh.GetUsersLikes)
+	usersGroup.Get("/getLikes", uh.GetLikes)
 	usersGroup.Get("/getPosts", uh.GetUsersPosts)
 
 	postsGroup := app.Group("/posts")
 	postsGroup.Post("/create", jwt.JwtMiddleware(secret), ph.CreatePost)
 	postsGroup.Get("/get", ph.GetPost)
+	postsGroup.Post("/like", jwt.JwtMiddleware(secret), ph.Like)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("OK")

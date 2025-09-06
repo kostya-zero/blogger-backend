@@ -2,6 +2,7 @@ package routes
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -75,4 +76,46 @@ func (ph *PostsHandler) GetPost(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(post)
+}
+
+func (ph *PostsHandler) Like(c *fiber.Ctx) error {
+	user := c.Locals("user")
+	if user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Access denied.",
+		})
+	}
+
+	claims, ok := user.(*jwt.TokenClaims)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized: bad access token",
+		})
+	}
+
+	postID := c.Query("id", "")
+
+	if postID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "The 'id' parameter is required"})
+	}
+
+	postIntID, err := strconv.Atoi(postID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Bad post ID"})
+	}
+
+	if err = ph.DB.Where("id = ?", postIntID).First(&models.Post{}).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
+	}
+
+	like := models.Like{
+		UserID: claims.UserID,
+		PostID: uint(postIntID),
+	}
+
+	if err = ph.DB.Create(like).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to like the post"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"succes": 1})
 }
