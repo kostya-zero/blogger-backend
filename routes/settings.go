@@ -17,7 +17,7 @@ func NewSettingsHandler(db *gorm.DB) *SettingsHandler {
 	return &SettingsHandler{DB: db}
 }
 
-func (sh *SettingsHandler) UpdateDisplayName(c *fiber.Ctx) error {
+func (sh *SettingsHandler) UpdateUserName(c *fiber.Ctx) error {
 	claims, err := helpers.GetClaimsFromContext(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

@@ -68,7 +68,7 @@ func main() {
 	postsGroup.Post("/like", jwt.JwtMiddleware(secret), ph.Like)
 
 	settingsGroup := app.Group("/settings")
-	settingsGroup.Post("/update-username", jwt.JwtMiddleware(secret), sh.UpdateDisplayName)
+	settingsGroup.Post("/update-username", jwt.JwtMiddleware(secret), sh.UpdateUserName)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
