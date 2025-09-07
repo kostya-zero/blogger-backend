@@ -7,7 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/kostya-zero/blogger/dto"
-	"github.com/kostya-zero/blogger/jwt"
+	"github.com/kostya-zero/blogger/helpers"
 	"github.com/kostya-zero/blogger/models"
 	"github.com/kostya-zero/blogger/validation"
 	"gorm.io/gorm"
@@ -22,17 +22,10 @@ func NewPostsHandler(db *gorm.DB) *PostsHandler {
 }
 
 func (ph *PostsHandler) CreatePost(c *fiber.Ctx) error {
-	user := c.Locals("user")
-	if user == nil {
+	claims, err := helpers.GetClaimsFromContext(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Access denied.",
-		})
-	}
-
-	claims, ok := user.(*jwt.TokenClaims)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized: bad access token",
+			"error": err.Error(),
 		})
 	}
 
@@ -79,17 +72,10 @@ func (ph *PostsHandler) GetPost(c *fiber.Ctx) error {
 }
 
 func (ph *PostsHandler) Like(c *fiber.Ctx) error {
-	user := c.Locals("user")
-	if user == nil {
+	claims, err := helpers.GetClaimsFromContext(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Access denied.",
-		})
-	}
-
-	claims, ok := user.(*jwt.TokenClaims)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized: bad access token",
+			"error": err.Error(),
 		})
 	}
 
