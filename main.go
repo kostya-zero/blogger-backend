@@ -41,6 +41,7 @@ func main() {
 	ah := routes.NewAuthHandler(db, secret)
 	uh := routes.NewUserHandler(db)
 	ph := routes.NewPostsHandler(db)
+	sh := routes.NewSettingsHandler(db)
 
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: false,
@@ -65,6 +66,9 @@ func main() {
 	postsGroup.Post("/create", jwt.JwtMiddleware(secret), ph.CreatePost)
 	postsGroup.Get("/get", ph.GetPost)
 	postsGroup.Post("/like", jwt.JwtMiddleware(secret), ph.Like)
+
+	settingsGroup := app.Group("/settings")
+	settingsGroup.Post("/update-username", jwt.JwtMiddleware(secret), sh.UpdateDisplayName)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
