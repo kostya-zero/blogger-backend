@@ -69,6 +69,8 @@ func main() {
 
 	settingsGroup := app.Group("/settings")
 	settingsGroup.Post("/update-username", jwt.JwtMiddleware(secret), sh.UpdateUserName)
+	settingsGroup.Post("/update-displayname", jwt.JwtMiddleware(secret), sh.UpdateDisplayName)
+	settingsGroup.Post("/update-password", jwt.JwtMiddleware(secret), sh.UpdatePassword)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
