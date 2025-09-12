@@ -77,5 +77,9 @@ func main() {
 	})
 
 	println("Running Fiber App...")
-	app.Listen(":3000")
+	err = app.Listen(":3000")
+	if err != nil {
+		fmt.Printf("Error starting app: %s\n", err.Error())
+		os.Exit(1)
+	}
 }
