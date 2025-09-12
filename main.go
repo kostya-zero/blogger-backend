@@ -35,7 +35,11 @@ func main() {
 	println("Successfully connected to database.")
 
 	println("Running migrations...")
-	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{})
+	err = db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{})
+	if err != nil {
+		fmt.Printf("Failed to migrate users: %s", err.Error())
+		os.Exit(1)
+	}
 
 	println("Setting up Fiber...")
 	ah := routes.NewAuthHandler(db, secret)
