@@ -1,6 +1,8 @@
 package jwt
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -15,6 +17,12 @@ type TokenClaims struct {
 	jwt.RegisteredClaims
 }
 
+func generateJTI() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
+}
+
 func CreateToken(userID uint, secret string, ttl time.Duration) (string, error) {
 	now := time.Now()
 	claims := TokenClaims{
@@ -24,7 +32,7 @@ func CreateToken(userID uint, secret string, ttl time.Duration) (string, error) 
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
-			ID:        fmt.Sprintf("%d", time.Now().UnixNano()),
+			ID:        generateJTI(),
 		},
 	}
 
@@ -63,6 +71,10 @@ func ParseToken(tokenStr, secret string) (*TokenClaims, error) {
 		return nil, errors.New("could not parse claims")
 	}
 
+	if claims.Issuer != "Blogger" {
+		return nil, errors.New("invalid token issuer")
+	}
+
 	return claims, nil
 }
 
@@ -78,7 +90,7 @@ func JwtMiddleware(secret string) fiber.Handler {
 		claims, err := ParseToken(token, secret)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Unauthorized:" + err.Error(),
+				"error": "Invalid or expired access token.",
 			})
 		}
 
