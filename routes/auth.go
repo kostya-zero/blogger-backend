@@ -2,6 +2,8 @@
 package routes
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"time"
 
 	"github.com/kostya-zero/blogger/dto"
@@ -17,6 +19,16 @@ import (
 type AuthHandler struct {
 	DB     *gorm.DB
 	Secret string
+}
+
+func generateRefreshToken() (string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(b), nil
 }
 
 func NewAuthHandler(db *gorm.DB, secret string) *AuthHandler {
@@ -84,9 +96,17 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Could not generate access token"})
 	}
 
-	refresh, _ := jwt.CreateToken(user.ID, h.Secret, 7*24*time.Minute)
+	refresh, err := generateRefreshToken()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not generate refresh token"})
+	}
 
-	h.DB.Model(&user).Update("refresh_token", refresh)
+	hash, err := bcrypt.GenerateFromPassword([]byte(refresh), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not hash refresh token"})
+	}
+
+	h.DB.Model(&user).Update("refresh_token", string(hash))
 
 	c.Cookie(&fiber.Cookie{
 		Name:     "access_token",
